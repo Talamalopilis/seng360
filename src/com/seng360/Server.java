@@ -11,6 +11,7 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.Scanner;
 
 public class Server
 {
@@ -42,7 +43,6 @@ public class Server
         OutputStreamWriter osw = new OutputStreamWriter(os);
         BufferedWriter bw = new BufferedWriter(osw);
         bw.write(returnMessage);
-        System.out.println("Message sent to the client is "+returnMessage);
         bw.flush();
     }
 
@@ -51,19 +51,22 @@ public class Server
         try
         {
             Server server = new Server();
-
+            Scanner sc = new Scanner(System.in);
 
             //Server is running always. This is done using this while(true) loop
             while(true)
             {
                 String message = server.checkInput();
-                System.out.println("Message received from client is "+message);
+                System.out.println("Message received from client is : "+message);
+                System.out.println("your reply: \n");
 
                 String returnMessage;
-                returnMessage = message + " back from server\n";
+                returnMessage = sc.nextLine() + "\n";
                 //make sure to end messages with \n or client will stall
 
                 server.sendOutput(returnMessage);
+                System.out.println("Message sent to the client is : "+returnMessage);
+
 
             }
         }

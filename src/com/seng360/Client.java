@@ -6,6 +6,7 @@ package com.seng360;
 import java.io.*;
 import java.net.InetAddress;
 import java.net.Socket;
+import java.util.Scanner;
 
 public class Client
 {
@@ -17,12 +18,12 @@ public class Client
     public Client() throws IOException {
         host = "localhost";
         port = 25000;
-        InetAddress address = InetAddress.getByName(host);
-        socket = new Socket(address, port);
     }
 
     public void sendMessage(String message) throws IOException {
         //Send the message to the server
+        InetAddress address = InetAddress.getByName(host);
+        socket = new Socket(address, port);
         OutputStream os = socket.getOutputStream();
         OutputStreamWriter osw = new OutputStreamWriter(os);
         BufferedWriter bw = new BufferedWriter(osw);
@@ -44,15 +45,18 @@ public class Client
     {
         try
         {
+            Boolean stop = false;
             Client client = new Client();
+            Scanner sc = new Scanner(System.in);
+            while (!stop) {
+                System.out.println("Message to server :\n");
+                String message = sc.nextLine() + "\n";
+                client.sendMessage(message);
+                System.out.println("Message sent to the server : " + message);
 
-            String message = "testing from client \n";
-            client.sendMessage(message);
-            System.out.println("Message sent to the server : "+message);
-
-            String returnMessage = client.getMessage();
-            System.out.println("Message received from the server : " +returnMessage);
-
+                String returnMessage = client.getMessage();
+                System.out.println("Message received from the server : " + returnMessage);
+            }
         }
         catch (Exception exception)
         {
