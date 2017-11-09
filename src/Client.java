@@ -10,6 +10,7 @@ import javax.crypto.spec.SecretKeySpec;
 import java.security.*;
 import java.util.*;
 import java.lang.StringBuffer;
+import java.nio.file.*;
 
 public class Client
 {
@@ -21,7 +22,11 @@ public class Client
 	public static int securityArray[] = new int[3];	
 	public static int confidentialityActivateFlag = 0;
 	public static int authenticationActivateFlag = 0;		
-	
+	FileInputStream keyStream = new FileInputStream("keyfile.txt");
+	String workingDirectory = System.getProperty("user.dir");
+	Path path = Paths.get(workingDirectory+"/keyfile.txt");
+	byte[] keyBytes = Files.readAllBytes(path);
+	SecretKey sKey = new SecretKeySpec(keyBytes, 0, keyBytes.length, "AES");	
 
 
     private static Socket socket;
@@ -42,7 +47,7 @@ public class Client
 		
 		if (securityArray[0] == 1 && confidentialityActivateFlag == 1){
 			System.out.println("Encrypting message");
-			byte[] encryptedMessage = Seclib.encryptMessage(message);
+			byte[] encryptedMessage = Seclib.encryptMessage(message, sKey);
 			dos.writeInt(encryptedMessage.length);
 			dos.write(encryptedMessage);
 			System.out.println("Message sent to the server : " + encryptedMessage);
