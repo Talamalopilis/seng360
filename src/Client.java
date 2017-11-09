@@ -45,94 +45,14 @@ public class Client
         return message;
     }
 	
-	public static String initializeSecurityParameters(){
-	
-		int flagC = 0;
-		int flagI = 0;
-		int flagA = 0;
-		int securityArray[] = new int[3];
-		String securityArrayString = new String();
 
-		String s = new String();
-		
-		while(flagC == 0){
-			
-			System.out.println("Does this session require confidentiality? Y/N");
-			System.out.println();
-			s = reader.next();
-			System.out.println();
-			
-			if(s.equals("Y") || s.equals("y") || s.equals("N") || s.equals("n")){
-				flagC = 1;
-				if(s.equals("Y") || s.equals("y")){
-					securityArray[0] = 1;
-				}else{
-					securityArray[0] = 0;
-				}
-			}
-			
-			if(flagC == 0){
-				System.out.println("Invalid entry, must be one of Y,y,N,n");
-				System.out.println();
-			}
-		}
-		
-		while(flagI == 0){
-			
-			System.out.println("Does this session require integrity? Y/N");
-			System.out.println();
-			s = reader.next();
-			System.out.println();
-			
-			if(s.equals("Y") || s.equals("y") || s.equals("N") || s.equals("n")){
-				flagI = 1;
-				if(s.equals("Y") || s.equals("y")){
-					securityArray[1] = 1;
-				}else{
-					securityArray[1] = 0;
-				}
-			}
-			
-			if(flagI == 0){
-				System.out.println("Invalid entry, must be one of Y,y,N,n");
-				System.out.println();
-			}
-		}		
-	
-		while(flagA == 0){
-			
-			System.out.println("Does this session require authentication? Y/N");
-			System.out.println();
-			s = reader.next();
-			System.out.println();
-
-			if(s.equals("Y") || s.equals("y") || s.equals("N") || s.equals("n")){
-				flagA = 1;
-				if(s.equals("Y") || s.equals("y")){
-					securityArray[2] = 1;
-				}else{
-					securityArray[2] = 0;
-				}
-			}
-			
-			if(flagA == 0){
-				System.out.println("Invalid entry, must be one of Y,y,N,n");
-				System.out.println();
-			}
-		}	
-		
-		for(int i = 0; i < 3; i++){
-			securityArrayString = securityArrayString + String.valueOf(securityArray[i]);
-		}		
-		
-		return securityArrayString;
-	}	
 
     public static void main(String args[])
     {
         try
         {
-			securityStringClient = initializeSecurityParameters();
+			int securityArray[] = new int[3];
+			securityStringClient = Seclib.initializeSecurityParameters(reader, securityArray);
             Boolean stop = false;
             Client client = new Client();
 			int purgeFlag = 0; //Used to activate the line purge at beginning of first communication
@@ -140,7 +60,7 @@ public class Client
 			//Problem start 
 			
 			
-            String securityAlert = "SecurityParametersIncomin \n";
+            String securityAlert = "SecurityParametersIncoming \n";
             client.sendMessage(securityAlert);
             System.out.println("Message sent to the server : "+securityAlert);
 			String securityAcknowledged = client.getMessage();
@@ -177,8 +97,13 @@ public class Client
 					reader.nextLine();
 					purgeFlag = 1;
 				}
+
                 System.out.println("Message to server :\n");
                 String message = reader.nextLine() + "\n";
+				if (securityArray[1] == 1){
+					System.out.println("Integrity check\n");
+					String hash = Seclib.messageHash(message);
+				}
                 client.sendMessage(message);
                 System.out.println("Message sent to the server : " + message);
 
