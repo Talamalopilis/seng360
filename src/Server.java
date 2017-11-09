@@ -26,7 +26,9 @@ public class Server
     ServerSocket serverSocket;
 	public static Scanner reader = new Scanner(System.in);
 	public static int securityArray[] = new int[3];
-
+	public static int confidentialityActivateFlag = 0;
+	public static int authenticationActivateFlag = 0;
+	
 	private static Socket socket;
 
     public Server()throws java.io.IOException{
@@ -36,23 +38,34 @@ public class Server
     }
 
     public String checkInput() throws Exception {
+		System.out.println("checkInput() called from Server");
         //Reading the message from the client
         socket = serverSocket.accept();
         InputStream is = socket.getInputStream();
         InputStreamReader isr = new InputStreamReader(is);
         BufferedReader br = new BufferedReader(isr);
+		DataInputStream dis = new DataInputStream(is);
 		
-        String message = br.readLine();
-		if (securityArray[0] == 1){
+	
+		if (securityArray[0] == 1 && confidentialityActivateFlag == 1){
 			System.out.println("Decrypting message");
-			message = Seclib.decryptMessage(message.substring(0,message.length()-1));
+			//String message = Seclib.decryptMessage();
+			int len = dis.readInt();
+			byte[] data = new byte[len];
+			dis.readFully(data);
+			String message = Seclib.decryptMessage(data);
+			return message;
+		} else{
+			String message = br.readLine();
+			return message;
 		}
-        return message;
+        
     }
 
     public void sendOutput(String returnMessage) throws java.io.IOException{
         //Sending the response back to the client.
         OutputStream os = socket.getOutputStream();
+		
         OutputStreamWriter osw = new OutputStreamWriter(os);
         BufferedWriter bw = new BufferedWriter(osw);
         bw.write(returnMessage);
@@ -69,9 +82,7 @@ public class Server
 			int securityInitializationFlag = 0;
 			int clientRequestFlag = 0;
 			int purgeFlag = 0; //Used to activate the line purge at beginning of first communication
-			int rejectionFlag = 0;
-			int confidentialityActivateFlag = 0;
-			int AuthenticationActivateFlag = 0;			
+			int rejectionFlag = 0;			
 			
             while(securityInitializationFlag == 0)
             {
@@ -119,7 +130,7 @@ public class Server
 			}
 			
 			if (securityArray[2] == 1){
-				AuthenticationActivateFlag = 1;
+				authenticationActivateFlag = 1;
 			}				
 
             //Server is running always. This is done using this while(true) loop
@@ -175,93 +186,3 @@ public class Server
         }
     }
 }
-//)
-//    {
-//        try
-//        {
-//            Server server = new Server();
-//			int securityArray[] = new int[3];
-//			String securityStringServer = Seclib.initializeSecurityParameters(reader, securityArray);
-//			int securityInitializationFlag = 0;
-//			int clientRequestFlag = 0;
-//			int purgeFlag = 0; //Used to activate the line purge at beginning of first communication
-//			int rejectionFlag = 0;
-//
-//
-//            while(securityInitializationFlag == 0)
-//            {
-//                String message = server.checkInput();
-//                System.out.println("Message received from client is : "+message);
-//
-//                String returnMessage = "\n";
-//
-//				if(clientRequestFlag == 1){
-//					if(securityStringServer.equals(message) && rejectionFlag == 0){
-//						returnMessage = "Security parameters accepted \n";
-//						securityInitializationFlag = 1;
-//					} else{
-//
-//						returnMessage = "Security parameters of request are different than that of server, request denied. Relaunch Client.java to request new connection.\n";
-//						rejectionFlag = 1;
-//						server.sendOutput(returnMessage);
-//						System.out.println("Message sent to the client is : "+returnMessage);
-//
-//					}
-//				}
-//
-//				if(message.equals("SecurityParametersIncoming ")){
-//					returnMessage = "Request acknowledged \n";
-//					clientRequestFlag = 1;
-//					rejectionFlag = 0;
-//				}
-//
-//
-//                //make sure to end messages with \n or client will stall
-//
-//                server.sendOutput(returnMessage);
-//                System.out.println("Message sent to the client is : "+returnMessage);
-//
-//
-//            }
-//
-//
-//			System.out.println("Now exiting the securityInitializationFlag loop");
-//			securityInitializationFlag = 0;
-//			clientRequestFlag = 0;
-//
-//            //Server is running always. This is done using this while(true) loop
-//            while(true)
-//            {
-//				if(purgeFlag == 0){
-//					reader.nextLine();
-//					purgeFlag = 1;
-//				}
-//				System.out.println("Now entering the True loop");
-//
-//                String message = server.checkInput();
-//                System.out.println("Message received from client is : "+message);
-//                System.out.println("your reply: \n");
-//                String returnMessage;
-//                returnMessage = reader.nextLine() + "\n";
-//                //make sure to end messages with \n or client will stall
-//
-//                server.sendOutput(returnMessage);
-//                System.out.println("Message sent to the client is : "+returnMessage);
-//
-//
-//            }
-//        }
-//        catch (Exception e)
-//        {
-//            e.printStackTrace();
-//        }
-//        finally
-//        {
-//            try
-//            {
-//                socket.close();
-//            }
-//            catch(Exception e){}
-//        }
-//    }
-//}
