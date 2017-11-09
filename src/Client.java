@@ -29,7 +29,7 @@ public class Client
         port = 25000;
     }
 
-    public void sendMessage(String message) throws IOException {
+    public void sendMessage(String message) throws Exception {
         //Send the message to the server
         InetAddress address = InetAddress.getByName(host);
         socket = new Socket(address, port);
@@ -39,10 +39,7 @@ public class Client
 		
 		if (securityArray[0] == 1){
 			System.out.println("Encrypting message");
-			try{
-				byte[] encryption = Seclib.encryptMessage(message);
-				message = new String(encryption);
-			} catch(Exception e){}
+			message = Seclib.encryptMessage(message)+"\n";
 		} else{System.out.println("Not encrypting message");}
 		
         System.out.println("Message sent to the server : " + message);		
@@ -97,7 +94,7 @@ public class Client
 					e.printStackTrace();
 				}
 			} else{
-				System.out.println("No need to close socket because message received was "+securitySettingsAcknowledged);
+				System.out.println(securitySettingsAcknowledged);
 			}
 			
 			//Out of first two messages, can now activate cryptography/signature
@@ -116,16 +113,29 @@ public class Client
 					reader.nextLine();
 					purgeFlag = 1;
 				}
-
+				String hash = null;
                 System.out.println("Message to server :\n");
                 String message = reader.nextLine() + "\n";
 				if (securityArray[1] == 1){
-					System.out.println("Integrity check\n");
-					String hash = Seclib.messageHash(message);
+					System.out.println("generating hash\n");
+					hash = Seclib.messageHash(message);
+					System.out.println(hash);
+					client.sendMessage(hash+"\n");
+					String ack = client.getMessage();
+					assert ack == "ack";
 				}
                 client.sendMessage(message);
-
+				if (securityArray[1] == 1){
+					hash = client.getMessage();
+					System.out.println("Got hash: "+hash);
+					client.sendMessage("ack\n");
+				}
                 String returnMessage = client.getMessage();
+				if (securityArray[1] == 1){
+					System.out.println("comparing hash");
+					assert hash == Seclib.messageHash(returnMessage);
+					System.out.println("success!");
+				}
                 System.out.println("Message received from the server : " + returnMessage);
 
             }

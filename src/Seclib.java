@@ -23,17 +23,26 @@ import java.lang.StringBuffer;
  * Created by Tal on 11/8/2017.
  */
 
-public class Seclib {
+public class Seclib{
 
 	//Note that the next three lines simulate the previous sharing of a key between the Server and Client users
 	public static String encodedKey = "abcdefghijklmnop";
 	public static byte[] decodedKey = Base64.getDecoder().decode(encodedKey);
-	public static Key sKey = new SecretKeySpec(decodedKey, 0, decodedKey.length, "AES");	
+	//public static Key sKey = new SecretKeySpec(decodedKey, 0, decodedKey.length, "AES");
+    public static KeyGenerator kg;
+    static {
+        try {
+            kg = KeyGenerator.getInstance("AES");
+        } catch (NoSuchAlgorithmException e) {
+            e.printStackTrace();
+        }
+    }
+    public static SecretKey sKey = kg.generateKey();
 
-    public static String messageHash(String message) throws NoSuchAlgorithmException {
+    public static String messageHash(String message) throws NoSuchAlgorithmException, UnsupportedEncodingException {
         MessageDigest md = MessageDigest.getInstance("SHA-256");
         md.update(message.getBytes());
-        return md.digest(message.getBytes()).toString();
+        return new String(md.digest(message.getBytes()));
     }
 
 
@@ -142,32 +151,26 @@ public class Seclib {
         return securityArrayString;
     }
 	
-	public static byte[] encryptMessage(String plainText)throws Exception{
-		try{
-		
+	public static String encryptMessage(String plainText)throws Exception{
 			System.out.println("encryptMessage() called");
-			Cipher cipher = null;
+			Cipher cipher = Cipher.getInstance("AES");
 		
 			cipher.init(Cipher.ENCRYPT_MODE, sKey);
 			byte[] plainTextBytes = plainText.getBytes();
 			byte[] encryptedBytes = cipher.doFinal(plainTextBytes);
-			System.out.println("Printing the cipher: "+encryptedBytes);			
-			return encryptedBytes;
+            String out = new String(encryptedBytes);
+			System.out.println("Printing the cipher: "+out);
+			return out;
 
-		} catch(Exception e){
-				System.out.println("There was an issue with the encryption that called an exception");
-		  return null;}
 	}
 	
-    public static String decryptMessage(byte[] encryptedBytes) throws Exception {
-		try{
-			Cipher cipher = null;
+    public static String decryptMessage(String encryptedBytes) throws Exception {
+			Cipher cipher = Cipher.getInstance("AES");
 	
 			cipher.init(Cipher.DECRYPT_MODE, sKey);
-			byte[] recoveredBytes = cipher.doFinal(encryptedBytes);
+			byte[] recoveredBytes = cipher.doFinal(encryptedBytes.getBytes());
 			String decryptionString = new String(recoveredBytes);
 		
 			return decryptionString;
-		} catch(Exception e){return null;}	
     }	
 }
