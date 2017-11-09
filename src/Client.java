@@ -6,6 +6,7 @@ import java.io.*;
 import java.net.InetAddress;
 import java.net.Socket;
 import javax.crypto.*;
+import javax.crypto.spec.SecretKeySpec;
 import java.security.*;
 import java.util.*;
 import java.lang.StringBuffer;
@@ -13,9 +14,13 @@ import java.lang.StringBuffer;
 public class Client
 {
     String host;
+	
     int port;
 	static String securityStringClient;
-	public static Scanner reader = new Scanner(System.in);	
+	public static Scanner reader = new Scanner(System.in);
+	public static int securityArray[] = new int[3];	
+	
+
 
     private static Socket socket;
 
@@ -31,8 +36,17 @@ public class Client
         OutputStream os = socket.getOutputStream();
         OutputStreamWriter osw = new OutputStreamWriter(os);
         BufferedWriter bw = new BufferedWriter(osw);
-
-        bw.write(message);
+		
+		if (securityArray[0] == 1){
+			System.out.println("Encrypting message");
+			try{
+				byte[] encryption = Seclib.encryptMessage(message);
+				message = new String(encryption);
+			} catch(Exception e){}
+		} else{System.out.println("Not encrypting message");}
+		
+        System.out.println("Message sent to the server : " + message);		
+		bw.write(message);
         bw.flush();
     }
 
@@ -45,31 +59,29 @@ public class Client
         return message;
     }
 	
-
-
+	
+	
+	
     public static void main(String args[])
     {
         try
         {
-			int securityArray[] = new int[3];
+
 			securityStringClient = Seclib.initializeSecurityParameters(reader, securityArray);
             Boolean stop = false;
             Client client = new Client();
 			int purgeFlag = 0; //Used to activate the line purge at beginning of first communication
-			
-			//Problem start 
-			
+			int confidentialityActivateFlag = 0;
+			int AuthenticationActivateFlag = 0;			
 			
             String securityAlert = "SecurityParametersIncoming \n";
             client.sendMessage(securityAlert);
-            System.out.println("Message sent to the server : "+securityAlert);
 			String securityAcknowledged = client.getMessage();
             System.out.println("Message received from the server : " +securityAcknowledged);
 			
 			
 			String securitySettings = securityStringClient+"\n";
 			client.sendMessage(securitySettings);
-			System.out.println("Message sent to the server : "+securitySettings);
 			String securitySettingsAcknowledged = client.getMessage();
             System.out.println("Message received from the server : " +securitySettingsAcknowledged);
 			if(securitySettingsAcknowledged.equals("Security parameters of request are different than that of server, request denied. Relaunch Client.java to request new connection.")){
@@ -88,8 +100,15 @@ public class Client
 				System.out.println("No need to close socket because message received was "+securitySettingsAcknowledged);
 			}
 			
+			//Out of first two messages, can now activate cryptography/signature
 			
-			//Problem end
+			if (securityArray[0] == 1){
+				confidentialityActivateFlag = 1;
+			}
+			
+			if (securityArray[2] == 1){
+				AuthenticationActivateFlag = 1;
+			}			
 			
             while (!stop) {
 				
@@ -105,7 +124,6 @@ public class Client
 					String hash = Seclib.messageHash(message);
 				}
                 client.sendMessage(message);
-                System.out.println("Message sent to the server : " + message);
 
                 String returnMessage = client.getMessage();
                 System.out.println("Message received from the server : " + returnMessage);
