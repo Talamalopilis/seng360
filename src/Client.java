@@ -19,6 +19,8 @@ public class Client
 	static String securityStringClient;
 	public static Scanner reader = new Scanner(System.in);
 	public static int securityArray[] = new int[3];	
+	public static int confidentialityActivateFlag = 0;
+	public static int authenticationActivateFlag = 0;		
 	
 
 
@@ -36,14 +38,21 @@ public class Client
         OutputStream os = socket.getOutputStream();
         OutputStreamWriter osw = new OutputStreamWriter(os);
         BufferedWriter bw = new BufferedWriter(osw);
+		DataOutputStream dos = new DataOutputStream(os);
 		
-		if (securityArray[0] == 1){
+		if (securityArray[0] == 1 && confidentialityActivateFlag == 1){
 			System.out.println("Encrypting message");
-			message = Seclib.encryptMessage(message)+"\n";
-		} else{System.out.println("Not encrypting message");}
+			byte[] encryptedMessage = Seclib.encryptMessage(message);
+			dos.writeInt(encryptedMessage.length);
+			dos.write(encryptedMessage);
+			System.out.println("Message sent to the server : " + encryptedMessage);
+		} else{
+			System.out.println("Not encrypting message");
+				bw.write(message);
+				System.out.println("Message sent to the server : " + message);	
+			}
 		
-        System.out.println("Message sent to the server : " + message);		
-		bw.write(message);
+	
         bw.flush();
     }
 
@@ -68,8 +77,7 @@ public class Client
             Boolean stop = false;
             Client client = new Client();
 			int purgeFlag = 0; //Used to activate the line purge at beginning of first communication
-			int confidentialityActivateFlag = 0;
-			int AuthenticationActivateFlag = 0;			
+		
 			
             String securityAlert = "SecurityParametersIncoming \n";
             client.sendMessage(securityAlert);
@@ -104,7 +112,7 @@ public class Client
 			}
 			
 			if (securityArray[2] == 1){
-				AuthenticationActivateFlag = 1;
+				authenticationActivateFlag = 1;
 			}			
 			
             while (!stop) {
