@@ -151,7 +151,7 @@ public class Seclib{
         return securityArrayString;
     }
 	
-	public static byte[] encryptMessage(String plainText)throws Exception{
+	public static byte[] encryptMessage(String plainText, SecretKey sKey)throws Exception{
 			System.out.println("encryptMessage() called");
 			Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5Padding");
 		
@@ -162,9 +162,11 @@ public class Seclib{
 			System.out.println("Printing the cipher: "+encryptedBytes);
 			System.out.println("Printing the string: "+out);
 			return encryptedBytes;
+
 	}
 	
-    public static String decryptMessage(byte[] encryptedBytes) throws Exception {
+    public static String decryptMessage(byte[] encryptedBytes, SecretKey sKey) throws Exception {
+			System.out.println("decryptMessage() called");
 			Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5Padding");
 	
 			cipher.init(Cipher.DECRYPT_MODE, sKey);
