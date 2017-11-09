@@ -151,26 +151,25 @@ public class Seclib{
         return securityArrayString;
     }
 	
-	public static String encryptMessage(String plainText)throws Exception{
+	public static byte[] encryptMessage(String plainText)throws Exception{
 			System.out.println("encryptMessage() called");
-			Cipher cipher = Cipher.getInstance("AES");
+			Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5Padding");
 		
 			cipher.init(Cipher.ENCRYPT_MODE, sKey);
 			byte[] plainTextBytes = plainText.getBytes();
 			byte[] encryptedBytes = cipher.doFinal(plainTextBytes);
             String out = new String(encryptedBytes);
-			System.out.println("Printing the cipher: "+out);
-			return out;
-
+			System.out.println("Printing the cipher: "+encryptedBytes);
+			System.out.println("Printing the string: "+out);
+			return encryptedBytes;
 	}
 	
-    public static String decryptMessage(String encryptedBytes) throws Exception {
-			Cipher cipher = Cipher.getInstance("AES");
+    public static String decryptMessage(byte[] encryptedBytes) throws Exception {
+			Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5Padding");
 	
 			cipher.init(Cipher.DECRYPT_MODE, sKey);
-			byte[] recoveredBytes = cipher.doFinal(encryptedBytes.getBytes());
+			byte[] recoveredBytes = cipher.doFinal(encryptedBytes);
 			String decryptionString = new String(recoveredBytes);
-		
 			return decryptionString;
     }	
 }
