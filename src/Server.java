@@ -19,6 +19,7 @@ import javax.crypto.*;
 import javax.crypto.spec.SecretKeySpec;
 import java.security.*;
 import java.lang.StringBuffer;
+import java.nio.file.*;
 
 public class Server
 {
@@ -28,6 +29,11 @@ public class Server
 	public static int securityArray[] = new int[3];
 	public static int confidentialityActivateFlag = 0;
 	public static int authenticationActivateFlag = 0;
+	FileInputStream keyStream = new FileInputStream("keyfile.txt");
+	String workingDirectory = System.getProperty("user.dir");
+	Path path = Paths.get(workingDirectory+"/keyfile.txt");
+	byte[] keyBytes = Files.readAllBytes(path);
+	SecretKey sKey = new SecretKeySpec(keyBytes, 0, keyBytes.length, "AES");	
 	
 	private static Socket socket;
 
@@ -53,7 +59,7 @@ public class Server
 			int len = dis.readInt();
 			byte[] data = new byte[len];
 			dis.readFully(data);
-			String message = Seclib.decryptMessage(data);
+			String message = Seclib.decryptMessage(data, sKey);
 			return message;
 		} else{
 			String message = br.readLine();
@@ -61,13 +67,26 @@ public class Server
 		}
         
     }
+	
+	public void testEncryptionServerSide(String message){
+		
+		System.out.println("Calling encryption test");
+		//byte[] encryptedMessage = Seclib.encryptMessage(message, sKey);		
+	
+	}
 
     public void sendOutput(String returnMessage) throws java.io.IOException{
         //Sending the response back to the client.
         OutputStream os = socket.getOutputStream();
-		
+		DataOutputStream dos = new DataOutputStream(os);		
         OutputStreamWriter osw = new OutputStreamWriter(os);
         BufferedWriter bw = new BufferedWriter(osw);
+		
+		if (securityArray[0] == 1 && confidentialityActivateFlag == 1){
+			System.out.println("Encrypting message");			
+		}else{
+			System.out.println("Not encrypting message");
+		}
         bw.write(returnMessage);
         bw.flush();
     }
