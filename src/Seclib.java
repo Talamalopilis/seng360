@@ -45,7 +45,6 @@ public class Seclib{
         return new String(md.digest(message.getBytes()));
     }
 
-
     public static String initializeSecurityParameters(Scanner reader, int securityArray[]){
 
         int flagC = 0;
@@ -159,7 +158,6 @@ public class Seclib{
 			byte[] plainTextBytes = plainText.getBytes();
 			byte[] encryptedBytes = cipher.doFinal(plainTextBytes);
             String out = new String(encryptedBytes);
-			System.out.println("Printing the cipher: "+encryptedBytes);
 			System.out.println("Printing the string: "+out);
 			return encryptedBytes;
 

@@ -50,7 +50,7 @@ public class Client
 			byte[] encryptedMessage = Seclib.encryptMessage(message, sKey);
 			dos.writeInt(encryptedMessage.length);
 			dos.write(encryptedMessage);
-			System.out.println("Message sent to the server : " + encryptedMessage);
+			System.out.println("Message sent to the server : " + new String(encryptedMessage));
 		} else{
 			System.out.println("Not encrypting message");
 				bw.write(message);
@@ -61,14 +61,27 @@ public class Client
         bw.flush();
     }
 
-    public String getMessage() throws IOException {
-        //Get the return message from the server
-        InputStream is = socket.getInputStream();
-        InputStreamReader isr = new InputStreamReader(is);
-        BufferedReader br = new BufferedReader(isr);
-        String message = br.readLine();
-        return message;
-    }
+    public String getMessage() throws Exception {
+		InputStream is = socket.getInputStream();
+		InputStreamReader isr = new InputStreamReader(is);
+		BufferedReader br = new BufferedReader(isr);
+		DataInputStream dis = new DataInputStream(is);
+
+
+		if (securityArray[0] == 1 && confidentialityActivateFlag == 1){
+			//String message = Seclib.decryptMessage();
+			int len = dis.readInt();
+			byte[] data = new byte[len];
+			dis.readFully(data);
+			System.out.println("Decrypting message");
+			String message = Seclib.decryptMessage(data, sKey);
+			return message;
+		} else{
+			String message = br.readLine();
+			return message;
+		}
+
+	}
 	
 	
 	

@@ -23,6 +23,7 @@ import java.nio.file.*;
 
 public class Server
 {
+	String host;
     int port;
     ServerSocket serverSocket;
 	public static Scanner reader = new Scanner(System.in);
@@ -38,6 +39,7 @@ public class Server
 	private static Socket socket;
 
     public Server()throws java.io.IOException{
+		host = "localhost";
         port = 25000;
         serverSocket = new ServerSocket(port);
         System.out.println("Server Started and listening to the port 25000");
@@ -54,11 +56,11 @@ public class Server
 		
 	
 		if (securityArray[0] == 1 && confidentialityActivateFlag == 1){
-			System.out.println("Decrypting message");
 			//String message = Seclib.decryptMessage();
 			int len = dis.readInt();
 			byte[] data = new byte[len];
 			dis.readFully(data);
+			System.out.println("Decrypting message");
 			String message = Seclib.decryptMessage(data, sKey);
 			return message;
 		} else{
@@ -75,20 +77,25 @@ public class Server
 	
 	}
 
-    public void sendOutput(String returnMessage) throws java.io.IOException{
-        //Sending the response back to the client.
-        OutputStream os = socket.getOutputStream();
-		DataOutputStream dos = new DataOutputStream(os);		
-        OutputStreamWriter osw = new OutputStreamWriter(os);
-        BufferedWriter bw = new BufferedWriter(osw);
-		
+    public void sendOutput(String message) throws Exception {
+		OutputStream os = socket.getOutputStream();
+		OutputStreamWriter osw = new OutputStreamWriter(os);
+		BufferedWriter bw = new BufferedWriter(osw);
+		DataOutputStream dos = new DataOutputStream(os);
+
 		if (securityArray[0] == 1 && confidentialityActivateFlag == 1){
-			System.out.println("Encrypting message");			
-		}else{
+			System.out.println("Encrypting message");
+			byte[] encryptedMessage = Seclib.encryptMessage(message, sKey);
+			dos.writeInt(encryptedMessage.length);
+			dos.write(encryptedMessage);
+			System.out.println("Message sent to the client : " + new String(encryptedMessage));
+		} else{
 			System.out.println("Not encrypting message");
+			bw.write(message);
+			System.out.println("Message sent to the client : " + message);
 		}
-        bw.write(returnMessage);
-        bw.flush();
+
+		bw.flush();
     }
 	
 
@@ -186,7 +193,6 @@ public class Server
 					assert ack == "ack";
 				}
                 server.sendOutput(returnMessage);
-                System.out.println("Message sent to the client is : "+returnMessage);
 
 
             }
