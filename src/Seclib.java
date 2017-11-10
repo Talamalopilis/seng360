@@ -29,6 +29,8 @@ import java.security.KeyFactory;
 
 public class Seclib{
 
+	static boolean debug = false;
+
 	public static String encodedKey = "abcdefghijklmnop";
 	public static byte[] decodedKey = Base64.getDecoder().decode(encodedKey);
 	
@@ -160,15 +162,15 @@ public class Seclib{
 		//Use security array values to create key, etc based on need
 		
 		if(securityArray[0] == 1){
-			System.out.println("C operations needed");
+			System.out.println("Encryption activated");
 		}
 		
 		if(securityArray[1] == 1){
-			System.out.println("I operations needed");
+			System.out.println("Integrity check activated");
 		}
 
 		if(securityArray[2] == 1){
-			System.out.println("A operations needed");
+			System.out.println("Signature verification activated");
 		}		
 
         return securityArrayString;
