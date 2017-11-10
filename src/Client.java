@@ -17,6 +17,10 @@ import java.security.KeyFactory;
 
 public class Client
 {
+
+	static boolean debug = false;
+	
+	
     String host;
 	
     int port;
@@ -68,7 +72,7 @@ public class Client
 		DataOutputStream dos = new DataOutputStream(os);
 		
 		if (securityArray[0] == 1 && confidentialityActivateFlag == 1){
-			System.out.println("Encrypting message");
+			if (debug == true) System.out.println("Encrypting message");
 			byte[] encryptedMessage = Seclib.encryptMessage(message, sKey);
 			dos.writeInt(encryptedMessage.length);
 			dos.write(encryptedMessage);
@@ -82,7 +86,6 @@ public class Client
 		if(securityArray[2] == 1 && authenticationActivateFlag == 1){
 			System.out.println("About to create signature");
 			byte[] signatureToSend = Seclib.createSignature(privateKey, message);
-			System.out.println("About to send signatureToSend");
 			dos.writeInt(signatureToSend.length);
 			dos.write(signatureToSend);
 		}	
@@ -95,20 +98,34 @@ public class Client
 		InputStreamReader isr = new InputStreamReader(is);
 		BufferedReader br = new BufferedReader(isr);
 		DataInputStream dis = new DataInputStream(is);
-
+		String message = "";
 
 		if (securityArray[0] == 1 && confidentialityActivateFlag == 1){
-			//String message = Seclib.decryptMessage();
 			int len = dis.readInt();
 			byte[] data = new byte[len];
 			dis.readFully(data);
 			System.out.println("Decrypting message");
-			String message = Seclib.decryptMessage(data, sKey);
-			return message;
+			message = Seclib.decryptMessage(data, sKey);
 		} else{
-			String message = br.readLine();
-			return message;
+			message = br.readLine();
+			
 		}
+		
+		if (securityArray[2] == 1 && authenticationActivateFlag == 1){ //sent signature now
+		
+				int len = dis.readInt();
+				byte[] data = new byte[len];
+				dis.readFully(data);
+				System.out.println("Checking signature");
+				boolean verification = Seclib.verifySignature(publicKey, data);
+				if(verification == true){
+					System.out.println("Signature verified");
+				} else{
+					System.out.println("WARNING: Could not verify signature of incoming message");
+				}
+		}		
+		
+		return message;
 
 	}
 	
@@ -137,8 +154,6 @@ public class Client
 			String securitySettingsAcknowledged = client.getMessage();
             System.out.println("Message received from the server : " +securitySettingsAcknowledged);
 			if(securitySettingsAcknowledged.equals("Security parameters of request are different than that of server, request denied. Relaunch Client.java to request new connection.")){
-			
-				System.out.println("Closing socket because message received was "+securitySettingsAcknowledged);
 				
 				try
 				{
