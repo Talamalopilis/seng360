@@ -49,7 +49,6 @@ public class Server
 	static PublicKey publicKey;
 	static PrivateKey privateKey;
 	static KeyFactory keyFactory;
-	static public int signatureCheck = -1;
 	
 	private static Socket socket;
 	
@@ -83,7 +82,7 @@ public class Server
 		String message = "";
 		
 	
-		if (securityArray[0] == 1 && confidentialityActivateFlag == 1 && signatureCheck == -1){
+		if (securityArray[0] == 1 && confidentialityActivateFlag == 1){
 		
 				int len = dis.readInt();
 				byte[] data = new byte[len];
@@ -95,7 +94,7 @@ public class Server
 			message = br.readLine();
 		}
 		
-		if (securityArray[2] == 1 && authenticationActivateFlag == 1 && signatureCheck == 1){ //sent signature now
+		if (securityArray[2] == 1 && authenticationActivateFlag == 1){ //sent signature now
 		
 				int len = dis.readInt();
 				byte[] data = new byte[len];
@@ -103,18 +102,12 @@ public class Server
 				System.out.println("Checking signature");
 				boolean verification = Seclib.verifySignature(publicKey, data);
 				if(verification == true){
-					message = "Signature verified";
+					System.out.println("Signature verified");
 				} else{
-					message = "WARNING: Could not verify signature of incoming message";
+					System.out.println("WARNING: Could not verify signature of incoming message");
 				}
 		}
-		
-		if(authenticationActivateFlag == 1){
-			System.out.println("toggling signatureCheck");
-			signatureCheck = -signatureCheck;
-			System.out.println("signatureCheck is now "+signatureCheck+" and message is now "+message);
-		}
-        
+		        
 		return message;
     }
 
