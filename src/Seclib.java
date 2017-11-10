@@ -1,3 +1,8 @@
+/**
+ * Created by Tal on 11/8/2017.
+ * Last modified 11/9/2017 by Chase 
+ */
+
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
@@ -23,10 +28,6 @@ import java.security.spec.X509EncodedKeySpec;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.KeyFactory;
 
-/**
- * Created by Tal on 11/8/2017.
- */
-
 public class Seclib{
 
 	static boolean debug = false;
@@ -36,16 +37,6 @@ public class Seclib{
 	
 	public static Signature createSig;
 	public static Signature verifySig;
-
-    public static KeyGenerator kg;
-    static {
-        try {
-            kg = KeyGenerator.getInstance("AES");
-        } catch (NoSuchAlgorithmException e) {
-            e.printStackTrace();
-        }
-    }
-    public static SecretKey sKey = kg.generateKey();
 	
 	public static byte[] createSignature(PrivateKey priv, String message) throws Exception{
 		createSig = Signature.getInstance("SHA256withRSA");	
@@ -177,20 +168,20 @@ public class Seclib{
     }
 	
 	public static byte[] encryptMessage(String plainText, SecretKey sKey)throws Exception{
-			System.out.println("encryptMessage() called");
+			if (debug == true) System.out.println("encryptMessage() called");
 			Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5Padding");
 		
 			cipher.init(Cipher.ENCRYPT_MODE, sKey);
 			byte[] plainTextBytes = plainText.getBytes();
 			byte[] encryptedBytes = cipher.doFinal(plainTextBytes);
             String out = new String(encryptedBytes);
-			System.out.println("Printing the string: "+out);
+			if (debug == true) System.out.println("Printing the string: "+out);
 			return encryptedBytes;
 
 	}
 	
     public static String decryptMessage(byte[] encryptedBytes, SecretKey sKey) throws Exception {
-			System.out.println("decryptMessage() called");
+			if (debug == true) System.out.println("decryptMessage() called");
 			Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5Padding");
 	
 			cipher.init(Cipher.DECRYPT_MODE, sKey);
