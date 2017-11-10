@@ -18,8 +18,13 @@ import java.net.Socket;
 import javax.crypto.*;
 import javax.crypto.spec.SecretKeySpec;
 import java.security.*;
+import java.security.spec.DSAPublicKeySpec;
+import java.security.spec.DSAPrivateKeySpec;
 import java.lang.StringBuffer;
 import java.nio.file.*;
+import java.security.spec.X509EncodedKeySpec;
+import java.security.spec.PKCS8EncodedKeySpec;
+import java.security.KeyFactory;
 
 public class Server
 {
@@ -30,14 +35,34 @@ public class Server
 	public static int securityArray[] = new int[3];
 	public static int confidentialityActivateFlag = 0;
 	public static int authenticationActivateFlag = 0;
-	FileInputStream keyStream = new FileInputStream("keyfile.txt");
-	String workingDirectory = System.getProperty("user.dir");
-	Path path = Paths.get(workingDirectory+"/keyfile.txt");
-	byte[] keyBytes = Files.readAllBytes(path);
-	SecretKey sKey = new SecretKeySpec(keyBytes, 0, keyBytes.length, "AES");	
+	FileInputStream secKeyStream = new FileInputStream("keyfile.txt");
+	FileInputStream pubKeyStream = new FileInputStream("publickey.txt");	
+	FileInputStream privKeyStream = new FileInputStream("privatekey.txt");		
+	static String workingDirectory = System.getProperty("user.dir");
+	static Path secKeyPath = Paths.get(workingDirectory+"/keyfile.txt");
+	static Path pubKeyPath = Paths.get(workingDirectory+"/publickey.txt");
+	static Path privKeyPath = Paths.get(workingDirectory+"/privatekey.txt");
+	static byte[] secKeyBytes;
+	static byte[] pubKeyBytes;
+	static byte[] privKeyBytes;
+	static SecretKey sKey;
+	static PublicKey publicKey;
+	static PrivateKey privateKey;
+	static KeyFactory keyFactory;
+	static public int signatureCheck = -1;
 	
 	private static Socket socket;
+	
+	public static void setKeyData() throws Exception{
+		secKeyBytes = Files.readAllBytes(secKeyPath);
+		pubKeyBytes = Files.readAllBytes(pubKeyPath);
+		privKeyBytes = Files.readAllBytes(privKeyPath);	
+		publicKey = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(pubKeyBytes));
+		privateKey = KeyFactory.getInstance("RSA").generatePrivate(new PKCS8EncodedKeySpec(privKeyBytes));
 
+		sKey = new SecretKeySpec(secKeyBytes, 0, secKeyBytes.length, "AES");
+	}
+	
     public Server()throws java.io.IOException{
 		host = "localhost";
         port = 25000;
@@ -47,6 +72,7 @@ public class Server
 
     public String checkInput() throws Exception {
 		System.out.println("checkInput() called from Server");
+		
         //Reading the message from the client
         socket = serverSocket.accept();
         InputStream is = socket.getInputStream();
@@ -54,28 +80,43 @@ public class Server
         BufferedReader br = new BufferedReader(isr);
 		DataInputStream dis = new DataInputStream(is);
 		
+		String message = "";
+		
 	
-		if (securityArray[0] == 1 && confidentialityActivateFlag == 1){
-			//String message = Seclib.decryptMessage();
-			int len = dis.readInt();
-			byte[] data = new byte[len];
-			dis.readFully(data);
-			System.out.println("Decrypting message");
-			String message = Seclib.decryptMessage(data, sKey);
-			return message;
+		if (securityArray[0] == 1 && confidentialityActivateFlag == 1 && signatureCheck == -1){
+		
+				int len = dis.readInt();
+				byte[] data = new byte[len];
+				dis.readFully(data);
+				System.out.println("Decrypting message");
+				message = Seclib.decryptMessage(data, sKey);
+			
 		} else{
-			String message = br.readLine();
-			return message;
+			message = br.readLine();
+		}
+		
+		if (securityArray[2] == 1 && authenticationActivateFlag == 1 && signatureCheck == 1){ //sent signature now
+		
+				int len = dis.readInt();
+				byte[] data = new byte[len];
+				dis.readFully(data);
+				System.out.println("Checking signature");
+				boolean verification = Seclib.verifySignature(publicKey, data);
+				if(verification == true){
+					message = "Signature verified";
+				} else{
+					message = "WARNING: Could not verify signature of incoming message";
+				}
+		}
+		
+		if(authenticationActivateFlag == 1){
+			System.out.println("toggling signatureCheck");
+			signatureCheck = -signatureCheck;
+			System.out.println("signatureCheck is now "+signatureCheck+" and message is now "+message);
 		}
         
+		return message;
     }
-	
-	public void testEncryptionServerSide(String message){
-		
-		System.out.println("Calling encryption test");
-		//byte[] encryptedMessage = Seclib.encryptMessage(message, sKey);		
-	
-	}
 
     public void sendOutput(String message) throws Exception {
 		OutputStream os = socket.getOutputStream();
@@ -103,6 +144,7 @@ public class Server
     {
         try
         {
+			setKeyData();
             Server server = new Server();
 			String securityStringServer = Seclib.initializeSecurityParameters(reader, securityArray);
 			int securityInitializationFlag = 0;
