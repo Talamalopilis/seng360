@@ -1,6 +1,6 @@
 /**
  * Created by Tal on 11/6/2017.
- * Last modified 11/8/2017 by Chase
+ * Last modified 11/9/2017 by Chase
  */
 import java.io.*;
 import java.net.InetAddress;
@@ -18,9 +18,8 @@ import java.security.KeyFactory;
 public class Client
 {
 
-	static boolean debug = false;
-	
-	
+	static boolean debug = false; //Change to true for debug messages
+
     String host;
 	
     int port;
@@ -57,13 +56,12 @@ public class Client
 		privKeyBytes = Files.readAllBytes(privKeyPath);	
 		publicKey = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(pubKeyBytes));
 		privateKey = KeyFactory.getInstance("RSA").generatePrivate(new PKCS8EncodedKeySpec(privKeyBytes));
-
 		sKey = new SecretKeySpec(secKeyBytes, 0, secKeyBytes.length, "AES");
 	}
 	
-
+	//Send message to server
+	
     public void sendMessage(String message) throws Exception {
-        //Send the message to the server
         InetAddress address = InetAddress.getByName(host);
         socket = new Socket(address, port);
         OutputStream os = socket.getOutputStream();
@@ -71,20 +69,20 @@ public class Client
         BufferedWriter bw = new BufferedWriter(osw);
 		DataOutputStream dos = new DataOutputStream(os);
 		
-		if (securityArray[0] == 1 && confidentialityActivateFlag == 1){
+		if (securityArray[0] == 1 && confidentialityActivateFlag == 1){ //if encryption active
 			if (debug == true) System.out.println("Encrypting message");
 			byte[] encryptedMessage = Seclib.encryptMessage(message, sKey);
 			dos.writeInt(encryptedMessage.length);
 			dos.write(encryptedMessage);
-			System.out.println("Message sent to the server : " + new String(encryptedMessage));
+			if (debug == true) System.out.println("Message sent to the server : " + new String(encryptedMessage));
 		} else{
-			System.out.println("Not encrypting message");
+			if (debug == true) System.out.println("Not encrypting message");
 				bw.write(message);
-				System.out.println("Message sent to the server : " + message);	
+				if (debug == true) System.out.println("Message sent to the server : " + message);	
 			}
 			
-		if(securityArray[2] == 1 && authenticationActivateFlag == 1){
-			System.out.println("About to create signature");
+		if(securityArray[2] == 1 && authenticationActivateFlag == 1){  //if authentication active
+			if (debug == true) System.out.println("About to create signature");
 			byte[] signatureToSend = Seclib.createSignature(privateKey, message);
 			dos.writeInt(signatureToSend.length);
 			dos.write(signatureToSend);
@@ -92,6 +90,8 @@ public class Client
 		
         bw.flush();
     }
+	
+	//Receive message from server
 
     public String getMessage() throws Exception {
 		InputStream is = socket.getInputStream();
@@ -100,74 +100,65 @@ public class Client
 		DataInputStream dis = new DataInputStream(is);
 		String message = "";
 
-		if (securityArray[0] == 1 && confidentialityActivateFlag == 1){
+		if (securityArray[0] == 1 && confidentialityActivateFlag == 1){ //if encryption active
 			int len = dis.readInt();
 			byte[] data = new byte[len];
 			dis.readFully(data);
-			System.out.println("Decrypting message");
+			if (debug == true) System.out.println("Decrypting message");
 			message = Seclib.decryptMessage(data, sKey);
 		} else{
 			message = br.readLine();
-			
 		}
 		
-		if (securityArray[2] == 1 && authenticationActivateFlag == 1){ //sent signature now
+		if (securityArray[2] == 1 && authenticationActivateFlag == 1){ //if authentication active
 		
 				int len = dis.readInt();
 				byte[] data = new byte[len];
 				dis.readFully(data);
-				System.out.println("Checking signature");
+				if (debug == true) System.out.println("Checking signature");
 				boolean verification = Seclib.verifySignature(publicKey, data);
 				if(verification == true){
-					System.out.println("Signature verified");
+					if (debug == true) System.out.println("Signature verified");
 				} else{
 					System.out.println("WARNING: Could not verify signature of incoming message");
 				}
 		}		
 		
 		return message;
-
 	}
-	
-	
-	
 	
     public static void main(String args[])
     {
-        try
-        {
+        try {
+		
 			setKeyData();
 			securityStringClient = Seclib.initializeSecurityParameters(reader, securityArray);
             Boolean stop = false;
             Client client = new Client();
-			int purgeFlag = 0; //Used to activate the line purge at beginning of first communication
+			int purgeFlag = 0;
 		
-			
             String securityAlert = "SecurityParametersIncoming \n";
             client.sendMessage(securityAlert);
 			String securityAcknowledged = client.getMessage();
-            System.out.println("Message received from the server : " +securityAcknowledged);
-			
+            if (debug == true) System.out.println("Message received from the server : " +securityAcknowledged);
 			
 			String securitySettings = securityStringClient+"\n";
 			client.sendMessage(securitySettings);
 			String securitySettingsAcknowledged = client.getMessage();
-            System.out.println("Message received from the server : " +securitySettingsAcknowledged);
+            if (debug == true) System.out.println("Message received from the server : " +securitySettingsAcknowledged);
 			if(securitySettingsAcknowledged.equals("Security parameters of request are different than that of server, request denied. Relaunch Client.java to request new connection.")){
-				
-				try
-				{
+				System.out.println("Security parameters of request are different than that of server, request denied. Relaunch Client.java to request new connection.\n");
+				try{
 					socket.close();
 				}
-				catch(Exception e)
-				{
+				catch(Exception e){
 					e.printStackTrace();
 				}
 			} else{
-				System.out.println(securitySettingsAcknowledged);
+				if (debug == true) System.out.println(securitySettingsAcknowledged);
 			}
 			
-			//Out of first two messages, can now activate cryptography/signature
+			//Out of initial exchange, can now activate security features
 			
 			if (securityArray[0] == 1){
 				confidentialityActivateFlag = 1;
@@ -186,42 +177,38 @@ public class Client
 				String hash = null;
                 System.out.println("Message to server :\n");
                 String message = reader.nextLine() + "\n";
-				if (securityArray[1] == 1){
-					System.out.println("generating hash\n");
+				if (securityArray[1] == 1){  //if integrity check active
+					if (debug == true) System.out.println("generating hash\n");
 					hash = Seclib.messageHash(message);
-					System.out.println(hash);
+					if (debug == true) System.out.println(hash);
 					client.sendMessage(hash+"\n");
 					String ack = client.getMessage();
 					assert ack == "ack";
 				}
                 client.sendMessage(message);
+				System.out.println("Waiting for response from server");
 				if (securityArray[1] == 1){
 					hash = client.getMessage();
-					System.out.println("Got hash: "+hash);
+					if (debug == true) System.out.println("Got hash: "+hash);
 					client.sendMessage("ack\n");
 				}
+				
                 String returnMessage = client.getMessage();
 				if (securityArray[1] == 1){
-					System.out.println("comparing hash");
+					if (debug == true) System.out.println("comparing hash");
 					assert hash == Seclib.messageHash(returnMessage);
-					System.out.println("success!");
+					if (debug == true) System.out.println("success!");
 				}
                 System.out.println("Message received from the server : " + returnMessage);
 
             }
-        }
-        catch (Exception exception)
-        {
+        } catch (Exception exception) {
             exception.printStackTrace();
         }
-        finally
-        {
-			try
-			{
+        finally {
+			try {
 				socket.close();
-			}
-			catch(Exception e)
-			{
+			} catch(Exception e) {
 				e.printStackTrace();
 			}		
 			
