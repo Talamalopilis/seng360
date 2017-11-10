@@ -18,6 +18,10 @@ import javax.crypto.*;
 import javax.crypto.spec.SecretKeySpec;
 import java.security.*;
 import java.lang.StringBuffer;
+import java.security.Signature;
+import java.security.spec.X509EncodedKeySpec;
+import java.security.spec.PKCS8EncodedKeySpec;
+import java.security.KeyFactory;
 
 /**
  * Created by Tal on 11/8/2017.
@@ -25,10 +29,12 @@ import java.lang.StringBuffer;
 
 public class Seclib{
 
-	//Note that the next three lines simulate the previous sharing of a key between the Server and Client users
 	public static String encodedKey = "abcdefghijklmnop";
 	public static byte[] decodedKey = Base64.getDecoder().decode(encodedKey);
-	//public static Key sKey = new SecretKeySpec(decodedKey, 0, decodedKey.length, "AES");
+	
+	public static Signature createSig;
+	public static Signature verifySig;
+
     public static KeyGenerator kg;
     static {
         try {
@@ -38,6 +44,24 @@ public class Seclib{
         }
     }
     public static SecretKey sKey = kg.generateKey();
+	
+	public static byte[] createSignature(PrivateKey priv, String message) throws Exception{
+		createSig = Signature.getInstance("SHA256withRSA");	
+		createSig.initSign(priv);		
+		createSig.update(message.getBytes());		
+		byte[] realSig = createSig.sign();		
+		return realSig;
+	}
+	
+	public static boolean verifySignature(PublicKey pubKey, byte[] sentSig) throws Exception{
+		verifySig = Signature.getInstance("SHA256withRSA");		
+		verifySig.initVerify(pubKey);	
+		verifySig.update(sentSig);
+		
+		boolean verified = verifySig.verify(sentSig);
+		
+		return true;
+	}
 
     public static String messageHash(String message) throws NoSuchAlgorithmException, UnsupportedEncodingException {
         MessageDigest md = MessageDigest.getInstance("SHA-256");
