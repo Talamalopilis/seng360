@@ -11,6 +11,9 @@ import java.security.*;
 import java.util.*;
 import java.lang.StringBuffer;
 import java.nio.file.*;
+import java.security.spec.X509EncodedKeySpec;
+import java.security.spec.PKCS8EncodedKeySpec;
+import java.security.KeyFactory;
 
 public class Client
 {
@@ -22,12 +25,20 @@ public class Client
 	public static int securityArray[] = new int[3];	
 	public static int confidentialityActivateFlag = 0;
 	public static int authenticationActivateFlag = 0;		
-	FileInputStream keyStream = new FileInputStream("keyfile.txt");
-	String workingDirectory = System.getProperty("user.dir");
-	Path path = Paths.get(workingDirectory+"/keyfile.txt");
-	byte[] keyBytes = Files.readAllBytes(path);
-	SecretKey sKey = new SecretKeySpec(keyBytes, 0, keyBytes.length, "AES");	
-
+	FileInputStream secKeyStream = new FileInputStream("keyfile.txt");
+	FileInputStream pubKeyStream = new FileInputStream("publickey.txt");	
+	FileInputStream privKeyStream = new FileInputStream("privatekey.txt");		
+	static String workingDirectory = System.getProperty("user.dir");
+	static Path secKeyPath = Paths.get(workingDirectory+"/keyfile.txt");
+	static Path pubKeyPath = Paths.get(workingDirectory+"/publickey.txt");
+	static Path privKeyPath = Paths.get(workingDirectory+"/privatekey.txt");
+	static byte[] secKeyBytes;
+	static byte[] pubKeyBytes;
+	static byte[] privKeyBytes;
+	static SecretKey sKey;
+	static PublicKey publicKey;
+	static PrivateKey privateKey;
+	static KeyFactory keyFactory;
 
     private static Socket socket;
 
@@ -35,6 +46,17 @@ public class Client
         host = "localhost";
         port = 25000;
     }
+	
+	public static void setKeyData() throws Exception{
+		secKeyBytes = Files.readAllBytes(secKeyPath);
+		pubKeyBytes = Files.readAllBytes(pubKeyPath);
+		privKeyBytes = Files.readAllBytes(privKeyPath);	
+		publicKey = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(pubKeyBytes));
+		privateKey = KeyFactory.getInstance("RSA").generatePrivate(new PKCS8EncodedKeySpec(privKeyBytes));
+
+		sKey = new SecretKeySpec(secKeyBytes, 0, secKeyBytes.length, "AES");
+	}
+	
 
     public void sendMessage(String message) throws Exception {
         //Send the message to the server
@@ -56,8 +78,15 @@ public class Client
 				bw.write(message);
 				System.out.println("Message sent to the server : " + message);	
 			}
+			
+		if(securityArray[2] == 1 && authenticationActivateFlag == 1){
+			System.out.println("About to create signature");
+			byte[] signatureToSend = Seclib.createSignature(privateKey, message);
+			System.out.println("About to send signatureToSend");
+			dos.writeInt(signatureToSend.length);
+			dos.write(signatureToSend);
+		}	
 		
-	
         bw.flush();
     }
 
@@ -90,7 +119,7 @@ public class Client
     {
         try
         {
-
+			setKeyData();
 			securityStringClient = Seclib.initializeSecurityParameters(reader, securityArray);
             Boolean stop = false;
             Client client = new Client();
